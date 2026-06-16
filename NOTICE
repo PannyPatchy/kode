@@ -1,0 +1,54 @@
+kode
+Copyright 2026 The kode Authors
+
+This product is licensed under the Apache License, Version 2.0 (see LICENSE).
+
+This product includes the following third-party software. Each component is
+distributed under its own license; this NOTICE records attributions for the
+dependencies bundled into (or used to build) the distributed artifact.
+
+-------------------------------------------------------------------------------
+Bundled in the distributed binary
+-------------------------------------------------------------------------------
+
+Clikt
+  Copyright the AJ Alt Clikt contributors
+  License: Apache License 2.0
+  https://github.com/ajalt/clikt
+
+kotlinx.serialization
+  Copyright JetBrains s.r.o.
+  License: Apache License 2.0
+  https://github.com/Kotlin/kotlinx.serialization
+
+Kotlin Standard Library
+  Copyright JetBrains s.r.o. and Kotlin Programming Language contributors
+  License: Apache License 2.0
+  https://github.com/JetBrains/kotlin
+
+-------------------------------------------------------------------------------
+Build-time only (not redistributed in the artifact)
+-------------------------------------------------------------------------------
+
+GraalVM Native Image (CE) + org.graalvm.buildtools.native Gradle plugin
+  Toolchain: GPLv2 WITH Classpath-exception-2.0 ; plugin: Apache License 2.0
+  Native Image output is treated as an "unmodified Program", so the produced
+  binary does not inherit copyleft and remains distributable under Apache-2.0.
+
+detekt, kover, JUnit 5, MockK
+  Static analysis / coverage / test tooling. Not included in the artifact.
+
+-------------------------------------------------------------------------------
+Reserved for future command implementations (NOT yet a dependency)
+-------------------------------------------------------------------------------
+
+Eclipse LSP4J (planned, for `errors` / `refs` / `symbols`)
+  Dual-licensed: EPL-2.0 OR EDL-1.0. Distribution will select EDL-1.0
+  (Revised BSD-style, permissive).
+
+Gradle Tooling API (planned, for richer `init` / `test`)
+  License: Apache License 2.0
+
+JetBrains Kotlin Language Server
+  Apache-2.0 (partially closed-source / Alpha). NOT bundled or redistributed;
+  used only as a user-installed external process.
