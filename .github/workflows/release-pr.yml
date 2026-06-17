@@ -1,0 +1,63 @@
+name: Open release PR
+
+# When a PR is merged into main, ensure a "本番リリース" PR from main into the
+# release branch exists. If one already exists, do nothing (the new changes ride
+# along on the same PR automatically).
+on:
+  pull_request:
+    types: [closed]
+    branches: [main]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  open-release-pr:
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ensure release PR exists
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo;
+            const title = '本番リリース';
+            const base = 'release';
+            const head = 'main';
+
+            // 1. Already an open main -> release PR titled 本番リリース? Then do nothing.
+            const open = await github.rest.pulls.list({
+              owner, repo, state: 'open', base, head: `${owner}:${head}`,
+            });
+            if (open.data.some((pr) => pr.title === title)) {
+              core.info('Release PR already exists; nothing to do.');
+              return;
+            }
+
+            // 2. Ensure the release branch exists (create it from main if missing).
+            try {
+              await github.rest.repos.getBranch({ owner, repo, branch: base });
+            } catch (e) {
+              if (e.status !== 404) throw e;
+              const mainRef = await github.rest.git.getRef({ owner, repo, ref: `heads/${head}` });
+              await github.rest.git.createRef({
+                owner, repo, ref: `refs/heads/${base}`, sha: mainRef.data.object.sha,
+              });
+              core.info('Created release branch from main.');
+            }
+
+            // 3. Create the main -> release PR. If there is no diff, treat as a no-op.
+            try {
+              const pr = await github.rest.pulls.create({
+                owner, repo, title, head, base,
+                body: [
+                  'main の内容を release へ反映する本番リリース用 PR です（自動生成）。',
+                  '',
+                  'This PR promotes `main` to `release` for production release. Created automatically.',
+                ].join('\n'),
+              });
+              core.info(`Created release PR #${pr.data.number}.`);
+            } catch (e) {
+              core.warning(`Could not create release PR (likely no diff between main and release): ${e.message}`);
+            }

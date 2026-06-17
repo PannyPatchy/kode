@@ -1,0 +1,12 @@
+# detekt configuration for kode.
+# Starts from detekt's default ruleset (buildUponDefaultConfig = true in the
+# root build.gradle.kts). Only project-specific overrides are listed here.
+
+build:
+  maxIssues: 0
+
+config:
+  validation: true
+  warningsAsErrors: false
+
+# Keep the default rules as the baseline; tighten/relax here as the codebase grows.
