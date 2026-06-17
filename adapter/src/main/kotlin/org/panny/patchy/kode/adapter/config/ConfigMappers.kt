@@ -13,7 +13,7 @@ fun KotlinProject.toDto(): KodeConfigDto =
         project = ProjectDto(
             root = root.path.toString(),
             buildTool = buildTool.id,
-            kotlinVersion = kotlinVersion.value,
+            kotlinVersion = kotlinVersion?.value,
             sourceDirs = sourceDirs.map { it.value },
             testDirs = testDirs.map { it.value },
         ),
@@ -24,7 +24,7 @@ fun KodeConfigDto.toDomain(): KotlinProject =
     KotlinProject(
         root = ProjectRoot(Path.of(project.root)),
         buildTool = BuildTool.fromId(project.buildTool),
-        kotlinVersion = KotlinVersion(project.kotlinVersion),
+        kotlinVersion = project.kotlinVersion?.let(::KotlinVersion),
         sourceDirs = project.sourceDirs.map(::FilePath),
         testDirs = project.testDirs.map(::FilePath),
     )

@@ -14,7 +14,8 @@ import org.panny.patchy.kode.domain.valueobject.ProjectRoot
 data class KotlinProject(
     val root: ProjectRoot,
     val buildTool: BuildTool,
-    val kotlinVersion: KotlinVersion,
+    /** The detected Kotlin version, or `null` when it could not be determined. */
+    val kotlinVersion: KotlinVersion?,
     val sourceDirs: List<FilePath>,
     val testDirs: List<FilePath>,
 )

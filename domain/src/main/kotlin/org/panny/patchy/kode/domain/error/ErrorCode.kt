@@ -20,6 +20,7 @@ enum class ErrorCode(val exitCode: Int) {
     NO_PROJECT_CONFIG(EXIT_CONFIG),
     INVALID_CONFIG(EXIT_CONFIG),
     NO_PROJECT_ROOT(EXIT_CONFIG),
+    UNSUPPORTED_BUILD_TOOL(EXIT_CONFIG),
 
     // exit 3 — LSP failures (reserved for future command implementations)
     LSP_NOT_FOUND(EXIT_LSP),

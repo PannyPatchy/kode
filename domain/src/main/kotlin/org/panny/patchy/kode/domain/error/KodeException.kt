@@ -14,10 +14,19 @@ sealed class KodeException(
     val exitCode: Int get() = code.exitCode
 }
 
-/** No project root (`settings.gradle(.kts)`) could be found from the start directory. */
+/** No project root (`build.gradle(.kts)`) could be found from the start directory. */
 class NoProjectRootException(
     details: String? = null,
 ) : KodeException(ErrorCode.NO_PROJECT_ROOT, "No Gradle project root found", details)
+
+/**
+ * A build tool other than Gradle (e.g. Maven `pom.xml`) was detected. Only Gradle
+ * is supported in v1; Maven support is out of scope and planned for the future.
+ */
+class UnsupportedBuildToolException(
+    buildTool: String,
+    details: String? = null,
+) : KodeException(ErrorCode.UNSUPPORTED_BUILD_TOOL, "Unsupported build tool: $buildTool", details)
 
 /** `.kode.json` exists but is corrupt or missing required fields. */
 class InvalidConfigException(

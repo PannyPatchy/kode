@@ -2,6 +2,7 @@ package org.panny.patchy.kode.adapter.fs
 
 import org.panny.patchy.kode.domain.entity.KotlinProject
 import org.panny.patchy.kode.domain.error.NoProjectRootException
+import org.panny.patchy.kode.domain.error.UnsupportedBuildToolException
 import org.panny.patchy.kode.domain.port.BuildModelPort
 import org.panny.patchy.kode.domain.valueobject.BuildTool
 import org.panny.patchy.kode.domain.valueobject.FilePath
@@ -9,44 +10,61 @@ import org.panny.patchy.kode.domain.valueobject.KotlinVersion
 import org.panny.patchy.kode.domain.valueobject.ProjectRoot
 import java.nio.file.Path
 import kotlin.io.path.exists
+import kotlin.io.path.isDirectory
 import kotlin.io.path.readText
 
 /**
  * Lightweight, heuristic implementation of [BuildModelPort] (v1).
  *
- * It locates the Gradle project root by walking upward for a settings file and
- * infers the Kotlin version from the version catalog or build script. It does not
- * use the Gradle Tooling API; richer introspection is deferred (design ch. 05).
+ * It locates the Gradle project root by walking upward for a `build.gradle(.kts)`
+ * file and infers the Kotlin version from the version catalog or build script.
+ * It does not use the Gradle Tooling API; richer introspection is deferred
+ * (design ch. 05).
  */
 class HeuristicBuildModelAdapter : BuildModelPort {
 
     override fun introspect(cwd: Path): KotlinProject {
-        val root = findProjectRoot(cwd)
-            ?: throw NoProjectRootException(
-                details = "No settings.gradle(.kts) found from $cwd upward. Run kode init inside a Gradle project.",
-            )
+        val root = resolveProjectRoot(cwd)
         return KotlinProject(
             root = ProjectRoot(root),
             buildTool = BuildTool.GRADLE,
-            kotlinVersion = KotlinVersion(detectKotlinVersion(root)),
-            sourceDirs = DEFAULT_SOURCE_DIRS.map(::FilePath),
-            testDirs = DEFAULT_TEST_DIRS.map(::FilePath),
+            kotlinVersion = detectKotlinVersion(root),
+            sourceDirs = existingDirs(root, DEFAULT_SOURCE_DIRS),
+            testDirs = existingDirs(root, DEFAULT_TEST_DIRS),
         )
     }
 
-    private fun findProjectRoot(start: Path): Path? {
+    /**
+     * Walk upward from [start] until a Gradle build file is found. If a Maven
+     * `pom.xml` is encountered first, abort with [UnsupportedBuildToolException]
+     * (out of scope). If nothing is found, abort with [NoProjectRootException].
+     */
+    private fun resolveProjectRoot(start: Path): Path {
         var dir: Path? = start.toAbsolutePath().normalize()
         while (dir != null) {
             val current = dir
-            if (SETTINGS_FILES.any { current.resolve(it).exists() }) return current
+            if (BUILD_FILES.any { current.resolve(it).exists() }) return current
+            if (current.resolve(MAVEN_FILE).exists()) throw mavenUnsupported(current)
             dir = current.parent
         }
-        return null
+        throw NoProjectRootException(
+            details = "No build.gradle(.kts) found from $start upward. Run kode init inside a Gradle project.",
+        )
     }
 
-    /** Best-effort Kotlin version detection; falls back to [DEFAULT_KOTLIN_VERSION]. */
-    private fun detectKotlinVersion(root: Path): String =
-        detectFromCatalog(root) ?: detectFromBuildScript(root) ?: DEFAULT_KOTLIN_VERSION
+    private fun mavenUnsupported(dir: Path) = UnsupportedBuildToolException(
+        buildTool = "maven",
+        details = "Found $MAVEN_FILE at $dir. Only Gradle is supported in v1; " +
+            "Maven support is out of scope and planned for a future release.",
+    )
+
+    /** Keep only the conventional [candidates] that actually exist as directories. */
+    private fun existingDirs(root: Path, candidates: List<String>): List<FilePath> =
+        candidates.filter { root.resolve(it).isDirectory() }.map(::FilePath)
+
+    /** Best-effort Kotlin version detection; `null` when it cannot be determined. */
+    private fun detectKotlinVersion(root: Path): KotlinVersion? =
+        (detectFromCatalog(root) ?: detectFromBuildScript(root))?.let(::KotlinVersion)
 
     private fun detectFromCatalog(root: Path): String? =
         root.resolve("gradle/libs.versions.toml")
@@ -63,11 +81,10 @@ class HeuristicBuildModelAdapter : BuildModelPort {
         regex.find(text)?.groupValues?.getOrNull(1)?.takeIf { it.isNotBlank() }
 
     private companion object {
-        val SETTINGS_FILES = listOf("settings.gradle.kts", "settings.gradle")
         val BUILD_FILES = listOf("build.gradle.kts", "build.gradle")
+        const val MAVEN_FILE = "pom.xml"
         val DEFAULT_SOURCE_DIRS = listOf("src/main/kotlin")
         val DEFAULT_TEST_DIRS = listOf("src/test/kotlin")
-        const val DEFAULT_KOTLIN_VERSION = "2.1.0"
 
         // kotlin = "2.1.0"  (version catalog)
         val CATALOG_KOTLIN_REGEX = Regex("""(?m)^\s*kotlin\s*=\s*"([^"]+)"""")

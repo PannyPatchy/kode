@@ -32,6 +32,8 @@ class JsonProjectConfigRepository : ProjectConfigRepository {
         return dto.toDomain()
     }
 
+    override fun existsAt(root: ProjectRoot): Boolean = root.resolve(CONFIG_FILE_NAME).exists()
+
     override fun save(project: KotlinProject) {
         val target = project.root.resolve(CONFIG_FILE_NAME)
         val content = kodeJson.encodeToString(project.toDto())
