@@ -19,8 +19,8 @@ class HeuristicBuildModelAdapterTest {
     private val adapter = HeuristicBuildModelAdapter()
 
     @Test
-    fun `finds root upward by build file and detects kotlin version from catalog`(@TempDir dir: Path) {
-        dir.resolve("build.gradle.kts").writeText("plugins {}")
+    fun `finds the settings root upward and detects kotlin version from catalog`(@TempDir dir: Path) {
+        dir.resolve("settings.gradle.kts").writeText("rootProject.name = \"demo\"")
         dir.resolve("gradle").createDirectories()
         dir.resolve("gradle/libs.versions.toml").writeText("[versions]\nkotlin = \"2.0.20\"\n")
         dir.resolve("src/main/kotlin").createDirectories()
@@ -37,7 +37,26 @@ class HeuristicBuildModelAdapterTest {
     }
 
     @Test
-    fun `detects kotlin version from the build script`(@TempDir dir: Path) {
+    fun `aggregates source sets across modules and resolves to the true root`(@TempDir dir: Path) {
+        dir.resolve("settings.gradle.kts").writeText("include(\":domain\", \":app\")")
+        dir.resolve("build.gradle.kts").writeText("") // root has no sources of its own
+        dir.resolve("domain/src/main/kotlin").createDirectories()
+        dir.resolve("domain/src/test/kotlin").createDirectories()
+        dir.resolve("app/src/main/kotlin").createDirectories()
+        // build output below a module must be pruned, not reported
+        dir.resolve("app/build/src/main/kotlin").createDirectories()
+        val sub = dir.resolve("domain/src/main/kotlin").also { it.createDirectories() }
+
+        val project = adapter.introspect(sub)
+
+        assertEquals(dir.toRealPath(), project.root.path.toRealPath())
+        assertEquals(listOf("app/src/main/kotlin", "domain/src/main/kotlin"), project.sourceDirs.map { it.value })
+        assertEquals(listOf("domain/src/test/kotlin"), project.testDirs.map { it.value })
+    }
+
+    @Test
+    fun `detects kotlin version from the root build script`(@TempDir dir: Path) {
+        dir.resolve("settings.gradle.kts").writeText("")
         dir.resolve("build.gradle.kts").writeText("plugins { kotlin(\"jvm\") version \"1.9.24\" }")
 
         val project = adapter.introspect(dir)
@@ -47,7 +66,7 @@ class HeuristicBuildModelAdapterTest {
 
     @Test
     fun `kotlin version is null when undetectable`(@TempDir dir: Path) {
-        dir.resolve("build.gradle").writeText("")
+        dir.resolve("settings.gradle").writeText("")
 
         val project = adapter.introspect(dir)
 
@@ -56,7 +75,7 @@ class HeuristicBuildModelAdapterTest {
 
     @Test
     fun `omits source and test dirs that do not exist`(@TempDir dir: Path) {
-        dir.resolve("build.gradle.kts").writeText("")
+        dir.resolve("settings.gradle.kts").writeText("")
         dir.resolve("src/main/kotlin").createDirectories()
         // no src/test/kotlin
 
@@ -67,7 +86,7 @@ class HeuristicBuildModelAdapterTest {
     }
 
     @Test
-    fun `throws NoProjectRootException when no build file is found`(@TempDir dir: Path) {
+    fun `throws NoProjectRootException when no settings file is found`(@TempDir dir: Path) {
         val empty = Files.createDirectories(dir.resolve("empty"))
 
         assertThrows(NoProjectRootException::class.java) { adapter.introspect(empty) }
@@ -81,9 +100,9 @@ class HeuristicBuildModelAdapterTest {
     }
 
     @Test
-    fun `prefers gradle over maven when both are present`(@TempDir dir: Path) {
+    fun `prefers the gradle settings root over a maven file at the same level`(@TempDir dir: Path) {
         dir.resolve("pom.xml").writeText("<project/>")
-        dir.resolve("build.gradle.kts").writeText("")
+        dir.resolve("settings.gradle.kts").writeText("")
 
         val project = adapter.introspect(dir)
 
