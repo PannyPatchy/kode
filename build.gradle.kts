@@ -11,6 +11,7 @@ plugins {
 
 // Catalog accessors only resolve at the root script's top level, so capture the
 // shared test dependencies here and reuse them inside the subprojects block.
+val junitBom = libs.junit.bom
 val junitJupiter = libs.junit.jupiter
 val mockkLib = libs.mockk
 val junitLauncher = libs.junit.platform.launcher
@@ -38,6 +39,7 @@ subprojects {
     }
 
     dependencies {
+        "testImplementation"(platform(junitBom))
         "testImplementation"(junitJupiter)
         "testImplementation"(mockkLib)
         "testRuntimeOnly"(junitLauncher)

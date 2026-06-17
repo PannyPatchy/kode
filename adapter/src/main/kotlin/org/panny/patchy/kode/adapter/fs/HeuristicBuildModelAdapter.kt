@@ -37,8 +37,9 @@ class HeuristicBuildModelAdapter : BuildModelPort {
     private fun findProjectRoot(start: Path): Path? {
         var dir: Path? = start.toAbsolutePath().normalize()
         while (dir != null) {
-            if (SETTINGS_FILES.any { dir!!.resolve(it).exists() }) return dir
-            dir = dir.parent
+            val current = dir
+            if (SETTINGS_FILES.any { current.resolve(it).exists() }) return current
+            dir = current.parent
         }
         return null
     }

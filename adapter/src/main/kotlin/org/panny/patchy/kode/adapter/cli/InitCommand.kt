@@ -1,6 +1,7 @@
 package org.panny.patchy.kode.adapter.cli
 
 import com.github.ajalt.clikt.core.CliktCommand
+import com.github.ajalt.clikt.core.Context
 import org.panny.patchy.kode.adapter.presenter.JsonPresenter
 import org.panny.patchy.kode.application.usecase.InitProjectUseCase
 import java.nio.file.Path
@@ -14,10 +15,10 @@ import java.nio.file.Path
 class InitCommand(
     private val initProject: InitProjectUseCase,
     private val presenter: JsonPresenter,
-) : CliktCommand(
-    name = "init",
-    help = "Recognize the Kotlin/Gradle project and generate .kode.json",
-) {
+) : CliktCommand(name = "init") {
+    override fun help(context: Context): String =
+        "Recognize the Kotlin/Gradle project and generate .kode.json"
+
     override fun run() {
         val project = initProject.execute(Path.of("").toAbsolutePath())
         echo(presenter.renderProject(project))

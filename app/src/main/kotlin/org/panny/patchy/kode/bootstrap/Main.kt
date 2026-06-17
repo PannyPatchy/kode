@@ -1,6 +1,7 @@
 package org.panny.patchy.kode.bootstrap
 
 import com.github.ajalt.clikt.core.CliktError
+import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
 import org.panny.patchy.kode.adapter.cli.ErrorsCommand
 import org.panny.patchy.kode.adapter.cli.InitCommand
