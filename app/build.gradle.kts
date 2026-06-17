@@ -17,14 +17,14 @@ dependencies {
 
 application {
     applicationName = "kode"
-    mainClass.set("dev.kode.bootstrap.MainKt")
+    mainClass.set("org.panny.patchy.kode.bootstrap.MainKt")
 }
 
 graalvmNative {
     binaries {
         named("main") {
             imageName.set("kode")
-            mainClass.set("dev.kode.bootstrap.MainKt")
+            mainClass.set("org.panny.patchy.kode.bootstrap.MainKt")
             buildArgs.add("--no-fallback")
             buildArgs.add("-O2")
         }
