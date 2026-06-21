@@ -15,6 +15,7 @@ import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertInstanceOf
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
@@ -74,6 +75,48 @@ class InitProjectUseCaseTest {
         val result = useCase.execute(cwd, force = false, confirmOverwrite = { false })
 
         assertInstanceOf(InitResult.Aborted::class.java, result)
+        verify(exactly = 0) { configRepo.save(any()) }
+    }
+
+    @Test
+    fun `fills in the kotlin version from the resolver when detection returns null`() {
+        val detected = project.copy(kotlinVersion = null)
+        every { buildModel.introspect(cwd) } returns detected
+        every { configRepo.existsAt(detected.root) } returns false
+
+        val result = useCase.execute(cwd, resolveKotlinVersion = { KotlinVersion("1.9.24") })
+
+        val saved = (result as InitResult.Generated).project
+        assertEquals("1.9.24", saved.kotlinVersion?.value)
+        verify(exactly = 1) { configRepo.save(saved) }
+    }
+
+    @Test
+    fun `keeps the kotlin version null when the resolver supplies nothing`() {
+        val detected = project.copy(kotlinVersion = null)
+        every { buildModel.introspect(cwd) } returns detected
+        every { configRepo.existsAt(detected.root) } returns false
+
+        val result = useCase.execute(cwd, resolveKotlinVersion = { null })
+
+        assertNull((result as InitResult.Generated).project.kotlinVersion)
+    }
+
+    @Test
+    fun `does not resolve the version when overwrite is declined`() {
+        val detected = project.copy(kotlinVersion = null)
+        every { buildModel.introspect(cwd) } returns detected
+        every { configRepo.existsAt(detected.root) } returns true
+        var resolverCalled = false
+
+        val result = useCase.execute(
+            cwd,
+            confirmOverwrite = { false },
+            resolveKotlinVersion = { resolverCalled = true; it },
+        )
+
+        assertInstanceOf(InitResult.Aborted::class.java, result)
+        assertFalse(resolverCalled, "resolver must not run when the user aborts")
         verify(exactly = 0) { configRepo.save(any()) }
     }
 
