@@ -22,7 +22,7 @@ data class KodeConfigDto(
 data class ProjectDto(
     val root: String,
     @SerialName("build_tool") val buildTool: String,
-    @SerialName("kotlin_version") val kotlinVersion: String,
+    @SerialName("kotlin_version") val kotlinVersion: String? = null,
     @SerialName("source_dirs") val sourceDirs: List<String>,
     @SerialName("test_dirs") val testDirs: List<String>,
 )

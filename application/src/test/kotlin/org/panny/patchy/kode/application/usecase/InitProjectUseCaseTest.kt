@@ -1,5 +1,6 @@
 package org.panny.patchy.kode.application.usecase
 
+import org.panny.patchy.kode.application.dto.InitResult
 import org.panny.patchy.kode.domain.entity.KotlinProject
 import org.panny.patchy.kode.domain.error.NoProjectRootException
 import org.panny.patchy.kode.domain.port.BuildModelPort
@@ -12,7 +13,10 @@ import io.mockk.every
 import io.mockk.mockk
 import io.mockk.verify
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
+import org.junit.jupiter.api.Assertions.assertInstanceOf
 import org.junit.jupiter.api.Assertions.assertThrows
+import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
 import java.nio.file.Path
 
@@ -32,12 +36,13 @@ class InitProjectUseCaseTest {
     )
 
     @Test
-    fun `saves config on successful introspection`() {
+    fun `saves config on successful introspection when none exists`() {
         every { buildModel.introspect(cwd) } returns project
+        every { configRepo.existsAt(project.root) } returns false
 
         val result = useCase.execute(cwd)
 
-        assertEquals(project, result)
+        assertEquals(InitResult.Generated(project, overwritten = false), result)
         verify(exactly = 1) { configRepo.save(project) }
     }
 
@@ -48,5 +53,40 @@ class InitProjectUseCaseTest {
         assertThrows(NoProjectRootException::class.java) { useCase.execute(cwd) }
 
         verify(exactly = 0) { configRepo.save(any()) }
+    }
+
+    @Test
+    fun `prompts and overwrites when config exists and user confirms`() {
+        every { buildModel.introspect(cwd) } returns project
+        every { configRepo.existsAt(project.root) } returns true
+
+        val result = useCase.execute(cwd, force = false, confirmOverwrite = { true })
+
+        assertEquals(InitResult.Generated(project, overwritten = true), result)
+        verify(exactly = 1) { configRepo.save(project) }
+    }
+
+    @Test
+    fun `aborts without saving when config exists and user declines`() {
+        every { buildModel.introspect(cwd) } returns project
+        every { configRepo.existsAt(project.root) } returns true
+
+        val result = useCase.execute(cwd, force = false, confirmOverwrite = { false })
+
+        assertInstanceOf(InitResult.Aborted::class.java, result)
+        verify(exactly = 0) { configRepo.save(any()) }
+    }
+
+    @Test
+    fun `force overwrites without prompting`() {
+        every { buildModel.introspect(cwd) } returns project
+        every { configRepo.existsAt(project.root) } returns true
+        var prompted = false
+
+        val result = useCase.execute(cwd, force = true, confirmOverwrite = { prompted = true; false })
+
+        assertFalse(prompted, "confirmOverwrite must not be invoked when force is set")
+        assertTrue(result is InitResult.Generated && result.overwritten)
+        verify(exactly = 1) { configRepo.save(project) }
     }
 }

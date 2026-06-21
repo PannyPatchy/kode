@@ -7,6 +7,7 @@ import org.panny.patchy.kode.domain.valueobject.FilePath
 import org.panny.patchy.kode.domain.valueobject.KotlinVersion
 import org.panny.patchy.kode.domain.valueobject.ProjectRoot
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -56,6 +57,25 @@ class JsonProjectConfigRepositoryTest {
     @Test
     fun `load returns null when no config exists`(@TempDir dir: Path) {
         assertNull(repo.load(ProjectRoot(dir)))
+    }
+
+    @Test
+    fun `existsAt reflects whether the config file is present`(@TempDir dir: Path) {
+        assertFalse(repo.existsAt(ProjectRoot(dir)))
+
+        repo.save(sampleProject(dir))
+
+        assertTrue(repo.existsAt(ProjectRoot(dir)))
+    }
+
+    @Test
+    fun `round-trips a project with an unknown kotlin version`(@TempDir dir: Path) {
+        val project = sampleProject(dir).copy(kotlinVersion = null)
+        repo.save(project)
+
+        val json = dir.resolve(".kode.json").readText()
+        assertFalse(json.contains("kotlin_version"), json) // null field is omitted
+        assertEquals(project, repo.load(ProjectRoot(dir)))
     }
 
     @Test

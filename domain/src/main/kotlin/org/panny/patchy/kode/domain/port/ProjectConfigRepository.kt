@@ -14,6 +14,9 @@ interface ProjectConfigRepository {
      */
     fun load(start: ProjectRoot): KotlinProject?
 
+    /** Whether a `.kode.json` already exists directly at [root] (no upward search). */
+    fun existsAt(root: ProjectRoot): Boolean
+
     /** Persist [project] to `.kode.json` at its root (atomic write). */
     fun save(project: KotlinProject)
 }
