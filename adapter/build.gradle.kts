@@ -10,4 +10,5 @@ dependencies {
 
     implementation(libs.clikt)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.lsp4j)
 }
