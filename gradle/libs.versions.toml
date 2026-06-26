@@ -18,9 +18,10 @@ junit-jupiter = { module = "org.junit.jupiter:junit-jupiter" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 
-# --- Reserved for future command implementations (errors/refs/test/symbols) ---
 # Eclipse LSP4J (LSP client) — dual-licensed EPL-2.0 OR EDL-1.0; distribution selects EDL-1.0.
-# lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version = "0.24.0" }
+lsp4j = { module = "org.eclipse.lsp4j:org.eclipse.lsp4j", version = "0.24.0" }
+
+# --- Reserved for future command implementations (test) ---
 # Gradle Tooling API (project introspection / test discovery) — Apache-2.0.
 # gradle-tooling-api = { module = "org.gradle:gradle-tooling-api", version = "8.14.3" }
 

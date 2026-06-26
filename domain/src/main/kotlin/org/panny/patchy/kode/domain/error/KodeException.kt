@@ -42,3 +42,35 @@ class NotImplementedCommandException(
     "Command not implemented yet: $command",
     "This command is a scaffold stub and will be implemented in a future iteration.",
 )
+
+/**
+ * The Kotlin LSP binary could not be located. `kode` does not bundle it; the
+ * user must install it separately (design ch. 04). [details] carries install
+ * guidance for the AI consumer.
+ */
+class LspNotFoundException(
+    details: String? = null,
+    cause: Throwable? = null,
+) : KodeException(ErrorCode.LSP_NOT_FOUND, "Kotlin LSP binary not found", details, cause)
+
+/** An LSP request or notification did not complete within its time budget. */
+class LspTimeoutException(
+    details: String? = null,
+    cause: Throwable? = null,
+) : KodeException(ErrorCode.LSP_TIMEOUT, "Kotlin LSP request timed out", details, cause)
+
+/** The LSP server does not advertise a capability a command depends on. */
+class LspCapabilityUnsupportedException(
+    capability: String,
+    details: String? = null,
+) : KodeException(
+    ErrorCode.LSP_CAPABILITY_UNSUPPORTED,
+    "Kotlin LSP does not support required capability: $capability",
+    details,
+)
+
+/** The LSP process exited unexpectedly or the JSON-RPC channel broke. */
+class LspCrashedException(
+    details: String? = null,
+    cause: Throwable? = null,
+) : KodeException(ErrorCode.LSP_CRASHED, "Kotlin LSP process crashed", details, cause)

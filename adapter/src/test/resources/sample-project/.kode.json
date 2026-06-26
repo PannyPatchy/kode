@@ -1,0 +1,10 @@
+{
+  "version": "1.0",
+  "project": {
+    "root": ".",
+    "build_tool": "gradle",
+    "kotlin_version": null,
+    "source_dirs": ["src/main/kotlin"],
+    "test_dirs": ["src/test/kotlin"]
+  }
+}
