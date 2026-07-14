@@ -12,10 +12,23 @@ import org.panny.patchy.kode.adapter.cli.TestCommand
 import org.panny.patchy.kode.adapter.cli.TreeCommand
 import org.panny.patchy.kode.adapter.config.JsonProjectConfigRepository
 import org.panny.patchy.kode.adapter.fs.HeuristicBuildModelAdapter
+import org.panny.patchy.kode.adapter.fs.HeuristicTestDiscoveryAdapter
+import org.panny.patchy.kode.adapter.fs.NioFileTreeAdapter
+import org.panny.patchy.kode.adapter.lsp.LspDiagnosticsAdapter
+import org.panny.patchy.kode.adapter.lsp.LspReferenceAdapter
+import org.panny.patchy.kode.adapter.lsp.LspSessionFactory
+import org.panny.patchy.kode.adapter.lsp.LspSymbolAdapter
 import org.panny.patchy.kode.adapter.presenter.ErrorEnvelope
 import org.panny.patchy.kode.adapter.presenter.JsonPresenter
+import org.panny.patchy.kode.application.usecase.AnalyzeErrorsUseCase
+import org.panny.patchy.kode.application.usecase.BuildTreeUseCase
+import org.panny.patchy.kode.application.usecase.FindReferencesUseCase
+import org.panny.patchy.kode.application.usecase.FindTestsUseCase
 import org.panny.patchy.kode.application.usecase.InitProjectUseCase
+import org.panny.patchy.kode.application.usecase.ListSymbolsUseCase
 import org.panny.patchy.kode.domain.error.KodeException
+import org.panny.patchy.kode.domain.service.SnippetExtractor
+import org.panny.patchy.kode.domain.service.SymbolMatcher
 import kotlin.system.exitProcess
 
 private const val EXIT_INTERNAL_ERROR = 1
@@ -33,18 +46,37 @@ internal fun runCli(args: Array<String>): Int {
     val configRepo = JsonProjectConfigRepository()
     val buildModel = HeuristicBuildModelAdapter()
     val presenter = JsonPresenter()
+    val fileTree = NioFileTreeAdapter()
+
+    // --- Domain services (pure) ---
+    val snippetExtractor = SnippetExtractor()
+    val symbolMatcher = SymbolMatcher()
+
+    val testDiscovery = HeuristicTestDiscoveryAdapter(symbolMatcher)
+
+    // LSP sessions are created lazily, one short-lived session per command,
+    // inside the port adapters (design ch. 04 §3) — no lifecycle to manage here.
+    val lspProvider = LspSessionFactory(configuredLspPath = configRepo::loadLspPath)
+    val diagnosticsPort = LspDiagnosticsAdapter(lspProvider, snippetExtractor)
+    val symbolPort = LspSymbolAdapter(lspProvider)
+    val referencePort = LspReferenceAdapter(lspProvider, symbolMatcher, snippetExtractor)
 
     // --- Use cases (inner), with ports injected ---
     val initProject = InitProjectUseCase(buildModel, configRepo)
+    val buildTree = BuildTreeUseCase(configRepo, fileTree)
+    val findTests = FindTestsUseCase(configRepo, testDiscovery, symbolMatcher)
+    val analyzeErrors = AnalyzeErrorsUseCase(configRepo, diagnosticsPort)
+    val listSymbols = ListSymbolsUseCase(configRepo, symbolPort)
+    val findReferences = FindReferencesUseCase(configRepo, referencePort, symbolMatcher)
 
     // --- Driving adapter: the CLI ---
     val cli = KodeCli().subcommands(
         InitCommand(initProject, presenter),
-        ErrorsCommand(),
-        RefsCommand(),
-        TestCommand(),
-        TreeCommand(),
-        SymbolsCommand(),
+        ErrorsCommand(analyzeErrors, presenter),
+        RefsCommand(findReferences, presenter),
+        TestCommand(findTests, presenter),
+        TreeCommand(buildTree, presenter),
+        SymbolsCommand(listSymbols, presenter),
     )
 
     return try {

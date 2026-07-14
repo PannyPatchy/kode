@@ -19,6 +19,8 @@ import org.eclipse.lsp4j.ServerCapabilities
 import org.eclipse.lsp4j.SymbolInformation
 import org.eclipse.lsp4j.SymbolKind
 import org.eclipse.lsp4j.TextDocumentSyncKind
+import org.eclipse.lsp4j.WorkspaceSymbol
+import org.eclipse.lsp4j.WorkspaceSymbolParams
 import org.eclipse.lsp4j.Diagnostic as LspDiagnostic
 import org.eclipse.lsp4j.DidChangeConfigurationParams
 import org.eclipse.lsp4j.DidChangeWatchedFilesParams
@@ -91,6 +93,18 @@ class LspClientProtocolTest {
         override fun didChangeConfiguration(params: DidChangeConfigurationParams) = Unit
         override fun didChangeWatchedFiles(params: DidChangeWatchedFilesParams) = Unit
 
+        override fun symbol(
+            params: WorkspaceSymbolParams,
+        ): CompletableFuture<Either<MutableList<out SymbolInformation>, MutableList<out WorkspaceSymbol>>> {
+            val info = SymbolInformation(
+                params.query,
+                SymbolKind.Class,
+                Location("file:///tmp/Greeter.kt", range()),
+                "com.example",
+            )
+            return CompletableFuture.completedFuture(Either.forLeft(mutableListOf(info)))
+        }
+
         private fun range() = Range(Position(0, 0), Position(0, 1))
     }
 
@@ -146,6 +160,21 @@ class LspClientProtocolTest {
 
         val refs = lsp.references(file, Position(0, 0))
         assertEquals(1, refs.size)
+    }
+
+    @Test
+    fun `workspaceSymbols normalizes the server hits into candidates`() {
+        lsp.initialize()
+
+        val candidates = lsp.workspaceSymbols("Greeter")
+
+        assertEquals(1, candidates.size)
+        val candidate = candidates.first()
+        assertEquals("Greeter", candidate.name)
+        assertEquals(SymbolKind.Class, candidate.kind)
+        assertEquals("com.example", candidate.containerName)
+        assertEquals("file:///tmp/Greeter.kt", candidate.uri)
+        assertEquals(Position(0, 0), candidate.position)
     }
 
     @Test

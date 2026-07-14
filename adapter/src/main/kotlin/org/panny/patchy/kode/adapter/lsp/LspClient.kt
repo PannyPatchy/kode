@@ -22,6 +22,7 @@ import org.eclipse.lsp4j.TextDocumentClientCapabilities
 import org.eclipse.lsp4j.TextDocumentIdentifier
 import org.eclipse.lsp4j.TextDocumentItem
 import org.eclipse.lsp4j.WorkspaceClientCapabilities
+import org.eclipse.lsp4j.WorkspaceSymbolParams
 import org.eclipse.lsp4j.jsonrpc.messages.Either
 import org.panny.patchy.kode.domain.error.LspCapabilityUnsupportedException
 import org.panny.patchy.kode.domain.error.LspCrashedException
@@ -90,7 +91,7 @@ class LspClient(
         timeoutMillis: Long = defaultTimeoutMillis,
     ): List<Location> {
         ensureAlive()
-        requireCapability(isProvided(capabilities().referencesProvider), "textDocument/references")
+        requireCapability("textDocument/references") { it.referencesProvider }
         val params = ReferenceParams(
             TextDocumentIdentifier(file.toUri().toString()),
             position,
@@ -101,13 +102,33 @@ class LspClient(
             .map { it }
     }
 
+    /**
+     * `workspace/symbol`: search the workspace for symbols matching [query],
+     * normalized into [WorkspaceSymbolCandidate]s regardless of whether the
+     * server answers with legacy `SymbolInformation` or `WorkspaceSymbol`.
+     */
+    fun workspaceSymbols(
+        query: String,
+        timeoutMillis: Long = defaultTimeoutMillis,
+    ): List<WorkspaceSymbolCandidate> {
+        ensureAlive()
+        requireCapability("workspace/symbol") { it.workspaceSymbolProvider }
+        val params = WorkspaceSymbolParams(query)
+        val result = awaitOrThrow(session.server.workspaceService.symbol(params), timeoutMillis, "workspace/symbol")
+        return when {
+            result == null -> emptyList()
+            result.isLeft -> result.left.orEmpty().map { it.toCandidate() }
+            else -> result.right.orEmpty().map { it.toCandidate() }
+        }
+    }
+
     /** `textDocument/documentSymbol` for [file] (hierarchical or flat). */
     fun documentSymbols(
         file: Path,
         timeoutMillis: Long = defaultTimeoutMillis,
     ): List<Either<SymbolInformation, DocumentSymbol>> {
         ensureAlive()
-        requireCapability(isProvided(capabilities().documentSymbolProvider), "textDocument/documentSymbol")
+        requireCapability("textDocument/documentSymbol") { it.documentSymbolProvider }
         val params = DocumentSymbolParams(TextDocumentIdentifier(file.toUri().toString()))
         return awaitOrThrow(session.server.textDocumentService.documentSymbol(params), timeoutMillis, "documentSymbol")
             .orEmpty()
@@ -115,15 +136,14 @@ class LspClient(
 
     override fun close() = session.close()
 
-    private fun capabilities(): ServerCapabilities =
-        serverCapabilities ?: throw LspCrashedException(details = "initialize() was not called")
-
     private fun ensureAlive() {
         if (!session.isAlive) throw LspCrashedException(details = "LSP process is no longer running")
     }
 
-    private fun requireCapability(provided: Boolean, name: String) {
-        if (!provided) throw LspCapabilityUnsupportedException(name)
+    private fun requireCapability(name: String, provider: (ServerCapabilities) -> Either<Boolean, *>?) {
+        val capabilities = serverCapabilities
+            ?: throw LspCrashedException(details = "initialize() was not called")
+        if (!isProvided(provider(capabilities))) throw LspCapabilityUnsupportedException(name)
     }
 
     private fun <T> awaitOrThrow(future: CompletableFuture<T>, timeoutMillis: Long, what: String): T =
