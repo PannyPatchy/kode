@@ -56,6 +56,10 @@ class LspIntegrationTest {
             val refs = lsp.references(greeter, Position(3, 6), includeDeclaration = true, timeoutMillis = 60_000)
             println("[integration] references(Greeter) = ${refs.size}")
             assertTrue(refs.size >= 0, "references should return a list")
+
+            // 3d. workspace/symbol — resolve the Greeter class by name
+            val candidates = lsp.workspaceSymbols("Greeter", timeoutMillis = 60_000)
+            println("[integration] workspaceSymbols(Greeter) = ${candidates.size}")
         }
     }
 }

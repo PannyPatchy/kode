@@ -34,6 +34,21 @@ class JsonProjectConfigRepository : ProjectConfigRepository {
 
     override fun existsAt(root: ProjectRoot): Boolean = root.resolve(CONFIG_FILE_NAME).exists()
 
+    /**
+     * The optional `lsp.path` from `.kode.json`, searched upward from [start].
+     * Machine-specific LSP configuration stays out of the domain model, so this
+     * is an adapter-level accessor rather than part of [ProjectConfigRepository].
+     */
+    fun loadLspPath(start: Path): String? {
+        val file = findUpwards(start) ?: return null
+        val dto = try {
+            kodeJson.decodeFromString<KodeConfigDto>(file.readText())
+        } catch (e: SerializationException) {
+            throw InvalidConfigException(details = "Failed to parse $file: ${e.message}", cause = e)
+        }
+        return dto.lsp?.path?.takeIf { it.isNotBlank() }
+    }
+
     override fun save(project: KotlinProject) {
         val target = project.root.resolve(CONFIG_FILE_NAME)
         val content = kodeJson.encodeToString(project.toDto())

@@ -44,11 +44,15 @@ All commands output JSON only: results to **stdout**, error envelopes to **stder
 | Command | Status | 説明 / Description |
 |---------|--------|---------------------|
 | `kode init` | ✅ implemented | Gradleプロジェクトを認識し `.kode.json` を生成 / Recognize the Gradle project and generate `.kode.json` |
-| `kode errors <file>` | 🚧 stub | エラー・警告＋周辺スニペット（LSP）/ Errors/warnings + surrounding snippets (LSP) |
-| `kode refs <target>` | 🚧 stub | クラス・関数への参照元一覧（LSP）/ References to a class/function (LSP) |
-| `kode test <target>` | 🚧 stub | 関連テストクラス・関数（Gradle）/ Related test classes/functions (Gradle) |
-| `kode tree` | 🚧 stub | プロジェクト全体のファイルツリー / Whole-project file tree (file system) |
-| `kode symbols <file>` | 🚧 stub | クラス・関数・プロパティ一覧（LSP）/ Classes/functions/properties (LSP) |
+| `kode errors <file>` | ✅ implemented | エラー・警告＋周辺スニペット（LSP）/ Errors/warnings + surrounding snippets (LSP) |
+| `kode refs <target>` | ✅ implemented | クラス・関数への参照元一覧（LSP）/ References to a class/function (LSP) |
+| `kode test <target>` | ✅ implemented | 関連テストクラス・関数（命名規則）/ Related test classes/functions (naming heuristics) |
+| `kode tree` | ✅ implemented | プロジェクト全体のファイルツリー / Whole-project file tree (file system) |
+| `kode symbols <file>` | ✅ implemented | クラス・関数・プロパティ一覧（LSP）/ Classes/functions/properties (LSP) |
+
+`errors` / `refs` / `symbols` require the [JetBrains Kotlin LSP](https://github.com/Kotlin/kotlin-lsp) binary.
+Resolution order: `KODE_LSP_PATH` env var → `lsp.path` in `.kode.json` → `kotlin-lsp` on `PATH`
+(e.g. `brew install JetBrains/utils/kotlin-lsp`, or see `scripts/fetch-kotlin-lsp.sh`).
 
 ---
 

@@ -28,20 +28,25 @@ class UnsupportedBuildToolException(
     details: String? = null,
 ) : KodeException(ErrorCode.UNSUPPORTED_BUILD_TOOL, "Unsupported build tool: $buildTool", details)
 
+/**
+ * No `.kode.json` was found searching upward from the working directory. Every
+ * command except `init` requires it (design ch. 03 §1).
+ */
+class NoProjectConfigException(
+    details: String? = "Run 'kode init' at the project root first.",
+) : KodeException(ErrorCode.NO_PROJECT_CONFIG, "No .kode.json found", details)
+
+/** A CLI argument is malformed or points at something that does not exist. */
+class InvalidArgumentException(
+    message: String,
+    details: String? = null,
+) : KodeException(ErrorCode.INVALID_ARGUMENT, message, details)
+
 /** `.kode.json` exists but is corrupt or missing required fields. */
 class InvalidConfigException(
     details: String? = null,
     cause: Throwable? = null,
 ) : KodeException(ErrorCode.INVALID_CONFIG, "Invalid .kode.json", details, cause)
-
-/** A command's behaviour is not implemented yet (scaffold stub). */
-class NotImplementedCommandException(
-    command: String,
-) : KodeException(
-    ErrorCode.NOT_IMPLEMENTED,
-    "Command not implemented yet: $command",
-    "This command is a scaffold stub and will be implemented in a future iteration.",
-)
 
 /**
  * The Kotlin LSP binary could not be located. `kode` does not bundle it; the

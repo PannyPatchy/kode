@@ -37,4 +37,16 @@ class ValueObjectTest {
     fun `KotlinVersion rejects blank`() {
         assertThrows(IllegalArgumentException::class.java) { KotlinVersion("") }
     }
+
+    @Test
+    fun `SourcePosition is 1-based`() {
+        assertEquals(1, SourcePosition(1, 1).line)
+        assertThrows(IllegalArgumentException::class.java) { SourcePosition(0, 1) }
+        assertThrows(IllegalArgumentException::class.java) { SourcePosition(1, 0) }
+    }
+
+    @Test
+    fun `SymbolName rejects blank`() {
+        assertThrows(IllegalArgumentException::class.java) { SymbolName(" ") }
+    }
 }
