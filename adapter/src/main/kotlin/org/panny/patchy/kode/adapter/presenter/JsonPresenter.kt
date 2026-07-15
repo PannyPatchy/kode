@@ -2,6 +2,7 @@ package org.panny.patchy.kode.adapter.presenter
 
 import org.panny.patchy.kode.adapter.config.kodeJson
 import org.panny.patchy.kode.adapter.config.toDto
+import org.panny.patchy.kode.application.dto.DoctorResult
 import org.panny.patchy.kode.application.dto.ErrorsResult
 import org.panny.patchy.kode.application.dto.RefsResult
 import org.panny.patchy.kode.application.dto.SymbolsResult
@@ -32,6 +33,9 @@ class JsonPresenter {
 
     /** Render the `kode test` result. */
     fun renderTests(result: TestsResult): String = kodeJson.encodeToString(result.toDto())
+
+    /** Render the `kode doctor` result. */
+    fun renderDoctor(result: DoctorResult): String = kodeJson.encodeToString(result.toDto())
 
     /** Render an error envelope. */
     fun renderError(envelope: ErrorEnvelope): String = kodeJson.encodeToString(envelope)

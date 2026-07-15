@@ -219,3 +219,24 @@ sequenceDiagram
   "top_level_properties": [ {"name": "CONSTANT", "type": "String", "mutable": false} ]
 }
 ```
+
+---
+
+## `kode doctor`
+
+環境をチェックし、準備状況をJSONで報告する: `.kode.json` の有効性、Kotlin LSP の解決（どの優先順位ステップで解決したかも報告、[04](04-lsp.md)）、Javaランタイム（スタンドアロンLSPランチャーは JRE 17+ が必要）。チェックは読み取り専用。`--install-lsp` を付けると、LSPが未解決の場合のみ pinned バージョンを `~/.kode/lsp/` にダウンロードする。チェック失敗でも exit 0（状態はJSON内）。ダウンロード失敗のみエラーとなる（`LSP_DOWNLOAD_FAILED`、exit 3）。
+
+出力:
+```json
+{
+  "ok": true,
+  "checks": [
+    { "name": "project_config", "status": "ok", "detail": ".kode.json found (project root: /path/to/project)" },
+    { "name": "lsp_binary", "status": "ok", "detail": "kotlin-lsp resolved via managed: /home/user/.kode/lsp/262.8190.0/kotlin-lsp.sh" },
+    { "name": "java_runtime", "status": "ok", "detail": "Java 21 found" }
+  ],
+  "lsp": { "source": "managed", "path": "/home/user/.kode/lsp/262.8190.0/kotlin-lsp.sh", "installed_version": "262.8190.0" }
+}
+```
+
+失敗したチェックには対処方法を示す `hint` が付く（例: `Run 'kode init' at the project root.`）。

@@ -219,3 +219,24 @@ Output:
   "top_level_properties": [ {"name": "CONSTANT", "type": "String", "mutable": false} ]
 }
 ```
+
+---
+
+## `kode doctor`
+
+Check the environment and report readiness as JSON: `.kode.json` validity, Kotlin LSP resolution (with which precedence step matched, [04](04-lsp.md)), and a Java runtime (the standalone LSP launcher needs a JRE 17+). Checks are read-only; `--install-lsp` additionally downloads the pinned LSP into `~/.kode/lsp/` when none resolves. A failed check still exits 0 — the status lives in the JSON; only a failed download errors (`LSP_DOWNLOAD_FAILED`, exit 3).
+
+Output:
+```json
+{
+  "ok": true,
+  "checks": [
+    { "name": "project_config", "status": "ok", "detail": ".kode.json found (project root: /path/to/project)" },
+    { "name": "lsp_binary", "status": "ok", "detail": "kotlin-lsp resolved via managed: /home/user/.kode/lsp/262.8190.0/kotlin-lsp.sh" },
+    { "name": "java_runtime", "status": "ok", "detail": "Java 21 found" }
+  ],
+  "lsp": { "source": "managed", "path": "/home/user/.kode/lsp/262.8190.0/kotlin-lsp.sh", "installed_version": "262.8190.0" }
+}
+```
+
+Failing checks carry a `hint` with the remediation (e.g. `Run 'kode init' at the project root.`).

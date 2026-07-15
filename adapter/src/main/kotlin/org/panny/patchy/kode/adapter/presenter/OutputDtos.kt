@@ -85,3 +85,38 @@ data class TestsOutput(val target: String, val tests: List<TestDto>) {
         val functions: List<String>,
     )
 }
+
+/**
+ * `kode doctor` output. Unlike the analysis outputs this may carry absolute,
+ * machine-specific paths — doctor reports on the machine, not the project.
+ */
+@Serializable
+data class DoctorOutput(
+    val ok: Boolean,
+    val checks: List<CheckDto>,
+    val lsp: LspDto? = null,
+    val installed: InstalledDto? = null,
+) {
+    @Serializable
+    data class CheckDto(
+        val name: String,
+        val status: String,
+        val detail: String,
+        val hint: String? = null,
+    )
+
+    @Serializable
+    data class LspDto(
+        val source: String,
+        val path: String,
+        @SerialName("installed_version") val installedVersion: String? = null,
+    )
+
+    /** Present only when this run installed the LSP (`--install-lsp`). */
+    @Serializable
+    data class InstalledDto(
+        val version: String,
+        val launcher: String,
+        val checksum: String,
+    )
+}

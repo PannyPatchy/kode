@@ -14,13 +14,16 @@ JetBrains Kotlin LSP（`Kotlin/kotlin-lsp`）は **Apache-2.0 だが、IntelliJ 
 1. 環境変数 `KODE_LSP_PATH`
 2. `.kode.json` の任意フィールド（例 `lsp.path`）
 3. `PATH` 上の `kotlin-lsp`（Homebrew等で導入: `brew install JetBrains/utils/kotlin-lsp`）
+4. `~/.kode/lsp/` 配下の kode 管理インストール（`kode doctor --install-lsp` で作成）
+
+管理インストールは最後に置き、ユーザーの明示的な設定が常に優先される。`kode doctor --install-lsp` は上記の非同梱方針に**違反しない**: 何も再配布せず、ユーザーの明示的な要求でユーザーのマシンが JetBrains 自身の成果物を取得するだけであり、`scripts/fetch-kotlin-lsp.sh` と同じ扱いである。CDN が `.sha256` サイドカーを公開している場合はチェックサム検証を行い、インストールは `~/.kode/lsp/installed.json` に記録される（`KODE_HOME` で `~/.kode` を上書き可能）。
 
 未検出時は機械可読なエラーJSONを返し、導入方法を `details` に含める（[07](07-error-handling.md)）。
 
 ```json
 { "error": { "code": "LSP_NOT_FOUND",
   "message": "Kotlin LSP binary not found",
-  "details": "Set KODE_LSP_PATH or install via 'brew install JetBrains/utils/kotlin-lsp'" } }
+  "details": "Run 'kode doctor --install-lsp' to download it, set KODE_LSP_PATH, add lsp.path to .kode.json, or install via 'brew install JetBrains/utils/kotlin-lsp'." } }
 ```
 
 ## 2. トランスポート

@@ -27,6 +27,9 @@ graalvmNative {
             mainClass.set("org.panny.patchy.kode.bootstrap.MainKt")
             buildArgs.add("--no-fallback")
             buildArgs.add("-O2")
+            // `kode doctor --install-lsp` downloads over HTTPS; URL protocols
+            // beyond http are disabled by default in native image.
+            buildArgs.add("--enable-https")
         }
     }
 }

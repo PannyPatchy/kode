@@ -79,3 +79,12 @@ class LspCrashedException(
     details: String? = null,
     cause: Throwable? = null,
 ) : KodeException(ErrorCode.LSP_CRASHED, "Kotlin LSP process crashed", details, cause)
+
+/**
+ * `kode doctor --install-lsp` could not download, verify, or extract the Kotlin
+ * LSP artifact. [details] carries the failing step and manual-install guidance.
+ */
+class LspDownloadFailedException(
+    details: String? = null,
+    cause: Throwable? = null,
+) : KodeException(ErrorCode.LSP_DOWNLOAD_FAILED, "Failed to download Kotlin LSP", details, cause)

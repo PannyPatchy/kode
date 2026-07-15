@@ -14,13 +14,16 @@ Therefore `kode` **does not bundle or redistribute** the LSP binary. It launches
 1. Environment variable `KODE_LSP_PATH`
 2. Optional field in `.kode.json` (e.g. `lsp.path`)
 3. `kotlin-lsp` on `PATH` (installable via e.g. `brew install JetBrains/utils/kotlin-lsp`)
+4. The kode-managed install under `~/.kode/lsp/` (created by `kode doctor --install-lsp`)
+
+The managed install is last so explicit user configuration always wins. `kode doctor --install-lsp` does **not** violate the no-bundling policy above: nothing is redistributed — the user's machine fetches JetBrains' own artifact on the user's explicit request, exactly like `scripts/fetch-kotlin-lsp.sh`. The download is checksum-verified when the CDN publishes a `.sha256` sidecar, and the install is recorded in `~/.kode/lsp/installed.json` (`KODE_HOME` overrides `~/.kode`).
 
 If not found, return a machine-readable error JSON with install guidance in `details` ([07](07-error-handling.md)).
 
 ```json
 { "error": { "code": "LSP_NOT_FOUND",
   "message": "Kotlin LSP binary not found",
-  "details": "Set KODE_LSP_PATH or install via 'brew install JetBrains/utils/kotlin-lsp'" } }
+  "details": "Run 'kode doctor --install-lsp' to download it, set KODE_LSP_PATH, add lsp.path to .kode.json, or install via 'brew install JetBrains/utils/kotlin-lsp'." } }
 ```
 
 ## 2. Transport
