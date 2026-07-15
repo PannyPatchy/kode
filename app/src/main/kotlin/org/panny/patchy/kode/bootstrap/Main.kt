@@ -3,10 +3,12 @@ package org.panny.patchy.kode.bootstrap
 import com.github.ajalt.clikt.core.CliktError
 import com.github.ajalt.clikt.core.parse
 import com.github.ajalt.clikt.core.subcommands
+import org.panny.patchy.kode.adapter.KODE_VERSION
 import org.panny.patchy.kode.adapter.cli.DoctorCommand
 import org.panny.patchy.kode.adapter.cli.ErrorsCommand
 import org.panny.patchy.kode.adapter.cli.InitCommand
 import org.panny.patchy.kode.adapter.cli.KodeCli
+import org.panny.patchy.kode.adapter.cli.McpCommand
 import org.panny.patchy.kode.adapter.cli.RefsCommand
 import org.panny.patchy.kode.adapter.cli.SymbolsCommand
 import org.panny.patchy.kode.adapter.cli.TestCommand
@@ -23,6 +25,9 @@ import org.panny.patchy.kode.adapter.lsp.LspInstallStore
 import org.panny.patchy.kode.adapter.lsp.LspReferenceAdapter
 import org.panny.patchy.kode.adapter.lsp.LspSessionFactory
 import org.panny.patchy.kode.adapter.lsp.LspSymbolAdapter
+import org.panny.patchy.kode.adapter.mcp.AnalysisUseCases
+import org.panny.patchy.kode.adapter.mcp.KodeTools
+import org.panny.patchy.kode.adapter.mcp.McpServer
 import org.panny.patchy.kode.adapter.presenter.ErrorEnvelope
 import org.panny.patchy.kode.adapter.presenter.JsonPresenter
 import org.panny.patchy.kode.application.usecase.AnalyzeErrorsUseCase
@@ -82,6 +87,17 @@ internal fun runCli(args: Array<String>): Int {
     val findReferences = FindReferencesUseCase(configRepo, referencePort, symbolMatcher)
     val diagnoseEnvironment = DiagnoseEnvironmentUseCase(environmentInspection, lspInstaller)
 
+    // MCP server: a second driving adapter over the same use cases, so tool
+    // output is byte-identical to the CLI's stdout.
+    val mcpServer = McpServer(
+        tools = KodeTools(
+            AnalysisUseCases(buildTree, analyzeErrors, listSymbols, findReferences, findTests),
+            presenter,
+        ).all(),
+        presenter = presenter,
+        serverVersion = KODE_VERSION,
+    )
+
     // --- Driving adapter: the CLI ---
     val cli = KodeCli().subcommands(
         InitCommand(initProject, presenter),
@@ -91,6 +107,7 @@ internal fun runCli(args: Array<String>): Int {
         TreeCommand(buildTree, presenter),
         SymbolsCommand(listSymbols, presenter),
         DoctorCommand(diagnoseEnvironment, presenter),
+        McpCommand(mcpServer),
     )
 
     return try {

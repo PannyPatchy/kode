@@ -240,3 +240,19 @@ sequenceDiagram
 ```
 
 失敗したチェックには対処方法を示す `hint` が付く（例: `Run 'kode init' at the project root.`）。
+
+---
+
+## `kode mcp`
+
+kode を **stdio 上の MCP (Model Context Protocol) サーバー** として起動し、読み取り専用の解析コマンドをツールとして公開する: `kode_tree`, `kode_errors`, `kode_symbols`, `kode_refs`, `kode_test`。CLI と並ぶ第二の駆動アダプターであり、各ツールは同じユースケースを呼び、同じ JSON プレゼンターで描画するため、ツールのテキスト内容は CLI の stdout とバイト単位で一致する。
+
+プロトコル上の注意:
+- 改行区切りの JSON-RPC 2.0(MCP stdio トランスポート。`Content-Length` フレーミングなし)。kotlinx.serialization による自前実装で、MCP SDK 依存なし・native-image 設定ゼロ([09](09-dependencies-license.md))。
+- `initialize`(プロトコルバージョン `2025-06-18` / `2025-03-26`)、`ping`、`tools/list`、`tools/call` を処理。その他の通知は無視、その他のリクエストは `-32601`。
+- ツール実行の失敗(あらゆる `KodeException`)は標準エラーエンベロープ([07](07-error-handling.md))を載せた `isError: true` のツール**結果**として返す — プロトコルエラーにはしない(AIが読めるように)。引数の欠落・不明ツールは `-32602`。
+- プロジェクトルートはサーバープロセスの作業ディレクトリ(CLIと同じ)— プロジェクトごとにサーバーを登録すること。
+
+```bash
+claude mcp add kode -- kode mcp   # Claude Code への登録(プロジェクトルートで実行)
+```

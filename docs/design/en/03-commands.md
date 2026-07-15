@@ -240,3 +240,19 @@ Output:
 ```
 
 Failing checks carry a `hint` with the remediation (e.g. `Run 'kode init' at the project root.`).
+
+---
+
+## `kode mcp`
+
+Run kode as an **MCP (Model Context Protocol) server over stdio**, exposing the read-only analysis commands as tools: `kode_tree`, `kode_errors`, `kode_symbols`, `kode_refs`, `kode_test`. This is a second driving adapter beside the CLI — each tool calls the same use case and renders through the same JSON presenter, so a tool's text content is byte-identical to the CLI's stdout.
+
+Protocol notes:
+- Newline-delimited JSON-RPC 2.0 (the MCP stdio transport; no `Content-Length` framing). Hand-rolled on kotlinx.serialization — no MCP SDK dependency, zero native-image config ([09](09-dependencies-license.md)).
+- Handles `initialize` (protocol versions `2025-06-18` / `2025-03-26`), `ping`, `tools/list`, `tools/call`. Other notifications are ignored; other requests get `-32601`.
+- Tool-execution failures (any `KodeException`) come back as `isError: true` tool **results** carrying the standard error envelope ([07](07-error-handling.md)) — never protocol errors, so the AI can read them. Missing/unknown tool arguments are `-32602`.
+- The project root is the server process's working directory, same as the CLI — register the server per project.
+
+```bash
+claude mcp add kode -- kode mcp   # register with Claude Code (run from the project root)
+```
