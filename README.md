@@ -1,69 +1,105 @@
 # kode
 
-AIエージェントのためのKotlinコードベース理解CLI。  
 A Kotlin codebase comprehension CLI for AI agents.
 
-📐 **設計書 / Design document**: [`docs/design/`](docs/design/README.md)
+**日本語版: [README.ja.md](README.ja.md)**
+
+📐 **Design documents**: [`docs/design/`](docs/design/README.md)
 
 ---
 
-## コンセプト / Concept
+## Concept
 
-**日本語:**  
-`kode` は、AIエージェントが Kotlin プロジェクトを効率的に理解するための CLI ツールです。  
-LSP・Gradle Tooling API など複数のソースから必要な情報を **JSON で一発返す** ことで、AIが `grep` / `find` を乱発することなくコードベースを把握できるようにします。  
-意味解釈はAI側の責務であり、`kode` の役割は「**正確なデータを収集し、構造化してJSONで返す**」ことに限定されます。
+`kode` helps AI agents understand Kotlin projects efficiently. It gathers information from authoritative sources (Kotlin LSP, Gradle, file system) and returns it as **structured JSON in a single call**, so AI agents don't need to run `grep`/`find` repeatedly or write ad-hoc analysis scripts.
 
-**English:**  
-`kode` is a CLI tool that helps AI agents efficiently understand Kotlin projects.  
-It gathers information from multiple sources (LSP, Gradle Tooling API, file system) and returns it as **structured JSON in a single call**, so AI agents don't need to run `grep`/`find` repeatedly.  
 Semantic interpretation is the AI's responsibility; `kode` is solely responsible for collecting accurate data and returning it as JSON.
 
----
-
-## 解決する課題 / Problems Solved
-
-**日本語:**
-
-- AIが `grep` や `find` を乱発して非効率になる
-- AIが自前でスクリプトを書いてコードベースを解析しようとしてしまう
-- 本来1コマンドで返せる情報を手探りで集めている
-
-**English:**
+**Problems solved:**
 
 - AI agents running `grep`/`find` excessively and inefficiently
 - AI agents writing ad-hoc scripts to analyze the codebase themselves
-- Information that could be returned in one command is being gathered by trial and error
+- Information that could be returned in one command being gathered by trial and error
 
 ---
 
-## コマンド一覧 / Commands
+## Quick Start
+
+```bash
+# 1. Build the CLI (JDK 21+; prebuilt binaries are planned)
+./gradlew :app:installDist
+export PATH="$PWD/app/build/install/kode/bin:$PATH"
+
+# 2. In your Kotlin/Gradle project: generate .kode.json
+cd /path/to/your/project
+kode init
+
+# 3. Check the environment and auto-install the Kotlin LSP if needed
+kode doctor --install-lsp
+
+# 4. Analyze
+kode tree
+kode errors src/main/kotlin/Foo.kt
+```
+
+---
+
+## Use as an MCP Server
+
+`kode mcp` runs kode as an [MCP](https://modelcontextprotocol.io) server over stdio, exposing the analysis commands as tools (`kode_tree`, `kode_errors`, `kode_symbols`, `kode_refs`, `kode_test`). AI agents can then call kode natively instead of shelling out.
+
+Register with Claude Code (run from your project root — the server analyzes the project at its working directory):
+
+```bash
+claude mcp add kode -- kode mcp
+# or scoped to the project for your whole team:
+claude mcp add --scope project kode -- kode mcp
+```
+
+Tool results are byte-identical to the corresponding CLI command's stdout.
+
+---
+
+## Commands
 
 All commands output JSON only: results to **stdout**, error envelopes to **stderr**, with machine-readable exit codes.
 
-| Command | Status | 説明 / Description |
-|---------|--------|---------------------|
-| `kode init` | ✅ implemented | Gradleプロジェクトを認識し `.kode.json` を生成 / Recognize the Gradle project and generate `.kode.json` |
-| `kode errors <file>` | ✅ implemented | エラー・警告＋周辺スニペット（LSP）/ Errors/warnings + surrounding snippets (LSP) |
-| `kode refs <target>` | ✅ implemented | クラス・関数への参照元一覧（LSP）/ References to a class/function (LSP) |
-| `kode test <target>` | ✅ implemented | 関連テストクラス・関数（命名規則）/ Related test classes/functions (naming heuristics) |
-| `kode tree` | ✅ implemented | プロジェクト全体のファイルツリー / Whole-project file tree (file system) |
-| `kode symbols <file>` | ✅ implemented | クラス・関数・プロパティ一覧（LSP）/ Classes/functions/properties (LSP) |
+| Command | Description |
+|---------|-------------|
+| `kode init` | Recognize the Gradle project and generate `.kode.json` |
+| `kode doctor` | Check the environment (`.kode.json`, kotlin-lsp, Java); `--install-lsp` downloads the LSP |
+| `kode errors <file>` | Errors/warnings + surrounding snippets (LSP) |
+| `kode refs <target>` | References to a class/function (LSP) |
+| `kode symbols <file>` | Classes/functions/properties in a file (LSP) |
+| `kode test <target>` | Related test classes/functions (naming heuristics) |
+| `kode tree` | Whole-project file tree (file system) |
+| `kode mcp` | Run kode as an MCP server over stdio |
 
-`errors` / `refs` / `symbols` require the [JetBrains Kotlin LSP](https://github.com/Kotlin/kotlin-lsp) binary.
-Resolution order: `KODE_LSP_PATH` env var → `lsp.path` in `.kode.json` → `kotlin-lsp` on `PATH`
-(e.g. `brew install JetBrains/utils/kotlin-lsp`, or see `scripts/fetch-kotlin-lsp.sh`).
+### Kotlin LSP
+
+`errors` / `refs` / `symbols` require the [JetBrains Kotlin LSP](https://github.com/Kotlin/kotlin-lsp) binary. The easiest setup is:
+
+```bash
+kode doctor --install-lsp
+```
+
+which downloads JetBrains' standalone build into `~/.kode/lsp/` (nothing is bundled or redistributed by kode). Resolution order: `KODE_LSP_PATH` env var → `lsp.path` in `.kode.json` → `kotlin-lsp` on `PATH` (e.g. `brew install JetBrains/utils/kotlin-lsp`) → the kode-managed install. Running the LSP requires a Java 17+ runtime — `kode doctor` checks this too.
 
 ---
 
-## インストール / Installation
+## Installation
 
-**TBD** — インストール方法は現在未定です。決まり次第こちらに記載します。  
-**TBD** — Installation instructions are not yet available. They will be added here once finalized.
+Prebuilt binaries are not published yet (planned — see [CHANGELOG.md](CHANGELOG.md)). For now, build from source:
+
+```bash
+git clone https://github.com/PannyPatchy/kode.git && cd kode
+./gradlew :app:installDist        # JVM launcher at app/build/install/kode/bin/kode
+# or, with a GraalVM toolchain, a single native binary:
+./gradlew :app:nativeCompile      # binary at app/build/native/nativeCompile/kode
+```
 
 ---
 
-## Build & Run（開発者向け / For Developers）
+## Build & Run (for Developers)
 
 Requires JDK 21+.
 
@@ -76,7 +112,6 @@ Requires JDK 21+.
 # Run the CLI from the JVM:
 ./gradlew :app:installDist
 ./app/build/install/kode/bin/kode --help
-./app/build/install/kode/bin/kode init
 
 # Build a single native binary (requires a GraalVM toolchain):
 ./gradlew :app:nativeCompile
@@ -85,14 +120,14 @@ Requires JDK 21+.
 
 ---
 
-## Project Layout / プロジェクト構成
+## Project Layout
 
 Multi-module Gradle build aligned with Clean Architecture:
 
 ```
 :domain       entities / value objects / ports (no framework deps)
 :application  use cases (depends on :domain)
-:adapter      Clikt CLI, JSON presenter, .kode.json repo, file system (driven)
+:adapter      Clikt CLI, MCP server, JSON presenter, .kode.json repo, LSP, file system
 :app          Composition Root (Main.kt) + GraalVM Native Image build
 ```
 
@@ -100,14 +135,13 @@ Multi-module Gradle build aligned with Clean Architecture:
 
 ## `.kode.json`
 
-Generated by `kode init` and **recommended to add to `.gitignore`** (already ignored here).  
-It holds environment-dependent absolute paths and is intended for a personal dev environment, not for team sharing.
+Generated by `kode init` and **recommended to add to `.gitignore`** (already ignored here). It holds environment-dependent absolute paths and is intended for a personal dev environment, not for team sharing.
 
 ---
 
-## Contributing / 貢献
+## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md). Issues and PRs are welcome in English or Japanese.
 
 ---
 

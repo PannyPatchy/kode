@@ -219,3 +219,40 @@ sequenceDiagram
   "top_level_properties": [ {"name": "CONSTANT", "type": "String", "mutable": false} ]
 }
 ```
+
+---
+
+## `kode doctor`
+
+環境をチェックし、準備状況をJSONで報告する: `.kode.json` の有効性、Kotlin LSP の解決（どの優先順位ステップで解決したかも報告、[04](04-lsp.md)）、Javaランタイム（スタンドアロンLSPランチャーは JRE 17+ が必要）。チェックは読み取り専用。`--install-lsp` を付けると、LSPが未解決の場合のみ pinned バージョンを `~/.kode/lsp/` にダウンロードする。チェック失敗でも exit 0（状態はJSON内）。ダウンロード失敗のみエラーとなる（`LSP_DOWNLOAD_FAILED`、exit 3）。
+
+出力:
+```json
+{
+  "ok": true,
+  "checks": [
+    { "name": "project_config", "status": "ok", "detail": ".kode.json found (project root: /path/to/project)" },
+    { "name": "lsp_binary", "status": "ok", "detail": "kotlin-lsp resolved via managed: /home/user/.kode/lsp/262.8190.0/kotlin-lsp.sh" },
+    { "name": "java_runtime", "status": "ok", "detail": "Java 21 found" }
+  ],
+  "lsp": { "source": "managed", "path": "/home/user/.kode/lsp/262.8190.0/kotlin-lsp.sh", "installed_version": "262.8190.0" }
+}
+```
+
+失敗したチェックには対処方法を示す `hint` が付く（例: `Run 'kode init' at the project root.`）。
+
+---
+
+## `kode mcp`
+
+kode を **stdio 上の MCP (Model Context Protocol) サーバー** として起動し、読み取り専用の解析コマンドをツールとして公開する: `kode_tree`, `kode_errors`, `kode_symbols`, `kode_refs`, `kode_test`。CLI と並ぶ第二の駆動アダプターであり、各ツールは同じユースケースを呼び、同じ JSON プレゼンターで描画するため、ツールのテキスト内容は CLI の stdout とバイト単位で一致する。
+
+プロトコル上の注意:
+- 改行区切りの JSON-RPC 2.0(MCP stdio トランスポート。`Content-Length` フレーミングなし)。kotlinx.serialization による自前実装で、MCP SDK 依存なし・native-image 設定ゼロ([09](09-dependencies-license.md))。
+- `initialize`(プロトコルバージョン `2025-06-18` / `2025-03-26`)、`ping`、`tools/list`、`tools/call` を処理。その他の通知は無視、その他のリクエストは `-32601`。
+- ツール実行の失敗(あらゆる `KodeException`)は標準エラーエンベロープ([07](07-error-handling.md))を載せた `isError: true` のツール**結果**として返す — プロトコルエラーにはしない(AIが読めるように)。引数の欠落・不明ツールは `-32602`。
+- プロジェクトルートはサーバープロセスの作業ディレクトリ(CLIと同じ)— プロジェクトごとにサーバーを登録すること。
+
+```bash
+claude mcp add kode -- kode mcp   # Claude Code への登録(プロジェクトルートで実行)
+```

@@ -1,8 +1,8 @@
 name: Open release PR
 
-# When a PR is merged into main, ensure a "本番リリース" PR from main into the
-# release branch exists. If one already exists, do nothing (the new changes ride
-# along on the same PR automatically).
+# When a PR is merged into main, ensure a "Production release" PR from main
+# into the release branch exists. If one already exists, do nothing (the new
+# changes ride along on the same PR automatically).
 on:
   pull_request:
     types: [closed]
@@ -22,15 +22,18 @@ jobs:
         with:
           script: |
             const { owner, repo } = context.repo;
-            const title = '本番リリース';
+            const title = 'Production release';
+            // Legacy title kept in the dedup check so an already-open release
+            // PR created before the rename is not duplicated.
+            const knownTitles = [title, '本番リリース'];
             const base = 'release';
             const head = 'main';
 
-            // 1. Already an open main -> release PR titled 本番リリース? Then do nothing.
+            // 1. Already an open main -> release PR? Then do nothing.
             const open = await github.rest.pulls.list({
               owner, repo, state: 'open', base, head: `${owner}:${head}`,
             });
-            if (open.data.some((pr) => pr.title === title)) {
+            if (open.data.some((pr) => knownTitles.includes(pr.title))) {
               core.info('Release PR already exists; nothing to do.');
               return;
             }
@@ -52,8 +55,6 @@ jobs:
               const pr = await github.rest.pulls.create({
                 owner, repo, title, head, base,
                 body: [
-                  'main の内容を release へ反映する本番リリース用 PR です（自動生成）。',
-                  '',
                   'This PR promotes `main` to `release` for production release. Created automatically.',
                 ].join('\n'),
               });

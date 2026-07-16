@@ -22,11 +22,12 @@ enum class ErrorCode(val exitCode: Int) {
     NO_PROJECT_ROOT(EXIT_CONFIG),
     UNSUPPORTED_BUILD_TOOL(EXIT_CONFIG),
 
-    // exit 3 — LSP failures (reserved for future command implementations)
+    // exit 3 — LSP failures
     LSP_NOT_FOUND(EXIT_LSP),
     LSP_TIMEOUT(EXIT_LSP),
     LSP_CAPABILITY_UNSUPPORTED(EXIT_LSP),
     LSP_CRASHED(EXIT_LSP),
+    LSP_DOWNLOAD_FAILED(EXIT_LSP),
 
     // exit 4 — Gradle failures (reserved for future command implementations)
     GRADLE_FAILURE(EXIT_GRADLE),

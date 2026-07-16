@@ -1,5 +1,6 @@
 package org.panny.patchy.kode.adapter.presenter
 
+import org.panny.patchy.kode.application.dto.DoctorResult
 import org.panny.patchy.kode.application.dto.ErrorsResult
 import org.panny.patchy.kode.application.dto.RefsResult
 import org.panny.patchy.kode.application.dto.SymbolsResult
@@ -82,6 +83,33 @@ internal fun TestsResult.toDto(): TestsOutput =
                 className = test.name.value,
                 file = test.file.value,
                 functions = test.functions.map { it.value },
+            )
+        },
+    )
+
+internal fun DoctorResult.toDto(): DoctorOutput =
+    DoctorOutput(
+        ok = report.ok,
+        checks = report.checks.map {
+            DoctorOutput.CheckDto(
+                name = it.name,
+                status = it.status.name.lowercase(),
+                detail = it.detail,
+                hint = it.hint,
+            )
+        },
+        lsp = report.lsp?.let {
+            DoctorOutput.LspDto(
+                source = it.source.name.lowercase(),
+                path = it.path.toString(),
+                installedVersion = it.installedVersion,
+            )
+        },
+        installed = installedNow?.let {
+            DoctorOutput.InstalledDto(
+                version = it.version,
+                launcher = it.launcher.toString(),
+                checksum = if (it.checksumVerified == true) "verified" else "unverified",
             )
         },
     )
