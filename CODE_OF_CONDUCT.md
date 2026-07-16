@@ -59,8 +59,10 @@ representative at an online or offline event.
 ## Enforcement
 
 Instances of abusive, harassing, or otherwise unacceptable behavior may be
-reported to the community leaders responsible for enforcement at
-shunmame0312@gmail.com.
+reported to the community leaders responsible for enforcement by
+[opening a GitHub issue](https://github.com/PannyPatchy/kode/issues/new/choose).
+For reports that should not be public, contact the maintainer directly
+through GitHub ([@PannyPatchy](https://github.com/PannyPatchy)).
 All complaints will be reviewed and investigated promptly and fairly.
 
 All community leaders are obligated to respect the privacy and security of the
